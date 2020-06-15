@@ -16,7 +16,7 @@
 
 (define (treemap-3 f tree)
   (cons (f (car tree))
-        (map (lambda (child) (treemap f child))
+        (map (lambda (child) (treemap-3 f child))
              (cdr tree)) ))
 
 (define (square-tree tree)
