@@ -1,0 +1,81 @@
+#lang racket
+
+(define attach-tag cons)
+(define type-tags car)
+(define contents cdr)
+
+(define *op-table* (make-hash))
+
+(define (put op type proc)
+  (hash-set! *op-table* (list op type) proc))
+
+(define (get op type)
+  (hash-ref *op-table* (list op type) '()))
+
+(define (=number? exp num)
+  (and (number? exp) (= exp num)))
+
+(define (install-deriv-package)
+  (define (make-product m1 m2)
+    (cond ((or (=number? m1 0)
+               (=number? m2 0))
+           0)
+          ((=number? m1 1) m2)
+          ((=number? m2 1) m1)
+          ((and (number? m1) (number? m2))
+           (* m1 m2))
+          (else (list '* m1 m2))))
+  (define (make-sum a1 a2)
+    (cond ((=number? a1 0) a2)
+          ((=number? a2 0) a1)
+          ((and (number? a1) (number? a2))
+           (+ a1 a2))
+          (else (list '+ a1 a2))))
+  (define (make-exponentiation e1 e2)
+    (cond ((or (=number? e1 0)
+               (=number? e2 0))
+           0)
+          ((=number? e2 0) 1)
+          ((=number? e2 1) e1)
+          (else (list '** e1 e2))))
+  (define addend car)
+  (define augend cadr)
+  (define multiplier car)
+  (define multiplicand cadr)
+  (define base car)
+  (define exponent cadr)
+  (define (tag x)
+    (attach-tag 'deriv x))
+  (put '+ 'deriv (lambda(x y) (make-sum (deriv (addend x) y) (deriv (augend x) y))))
+  (put '* 'deriv (lambda(x y) (make-sum
+                               (make-product (multiplier x)
+                                             (deriv (multiplicand x) y))
+                               (make-product (deriv (multiplier x) y)
+                                             (multiplicand x)))))
+  (put '** 'deriv (lambda(x y) (make-product
+                                (make-product
+                                 (exponent x)
+                                 (make-exponentiation
+                                  (base x)
+                                  (make-sum (exponent x) '-1)))
+                                (deriv (base x) y))))
+  )
+
+(define (deriv exp var)
+   (cond ((number? exp) 0)
+         ((variable? exp)
+           (if (same-variable? exp var)
+               1
+               0))
+         (else ((get (operator exp) 'deriv)
+                (operands exp)
+                var))))
+
+(define (same-variable? v1 v2)
+  (and (variable? v1)
+       (variable? v2)
+       (eq? v1 v2)))
+(define (variable? x) (symbol? x))
+(define (operator exp) (car exp))
+(define (operands exp) (cdr exp))
+
