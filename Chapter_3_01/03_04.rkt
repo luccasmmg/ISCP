@@ -1,0 +1,25 @@
+#lang sicp
+
+(define (make-account balance password)
+  (define counter 0)
+  (define (withdraw amount)
+    (set! counter 0)
+    (if (>= balance amount)
+        (begin (set! balance
+                     (- balance amount))
+               balance)
+        "Insufficient funds"))
+  (define (deposit amount)
+    (set! counter 0)
+    (set! balance (+ balance amount))
+    balance)
+  (define (call-the-cops p) (display "Fuck you im calling the cops"))
+  (define (dispatch m p)
+    (cond ((and (not (eq? p password)) (= counter 6)) call-the-cops)
+          ((not (eq? p password)) (set! counter (+ 1 counter))
+                                  (error "Incorrect pawwrod"))
+          ((eq? m 'withdraw) withdraw)
+          ((eq? m 'deposit) deposit)
+          (else (error "Unknow request:
+MAKE-ACCOUNT" m))))
+  dispatch)
